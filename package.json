@@ -1,0 +1,51 @@
+{
+  "name": "@meedwire/react-native-pdf-api",
+  "version": "0.1.0",
+  "description": "Native PDF rendering and search API for React Native.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "react-native": "src/index.ts",
+  "source": "src/index.ts",
+  "files": [
+    "src",
+    "react-native.config.js",
+    "nitrogen",
+    "android/build.gradle",
+    "android/gradle.properties",
+    "android/fix-prefab.gradle",
+    "android/CMakeLists.txt",
+    "android/src",
+    "ios/**/*.h",
+    "ios/**/*.m",
+    "ios/**/*.mm",
+    "ios/**/*.cpp",
+    "ios/**/*.swift",
+    "nitro.json",
+    "*.podspec",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "specs": "tsc --noEmit false && nitrogen --log-level debug"
+  },
+  "keywords": [
+    "react-native",
+    "pdf",
+    "nitro"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "nitrogen": "0.35.9",
+    "react": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-nitro-modules": "0.35.9",
+    "typescript": "~5.9.2"
+  },
+  "peerDependencies": {
+    "expo-file-system": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-nitro-modules": "*"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": [
+    "meedwire",
+    "pdfapi"
+  ],
+  "ios": {
+    "iosModuleName": "NitroPdfApi"
+  },
+  "android": {
+    "androidNamespace": [
+      "meedwire",
+      "pdfapi"
+    ],
+    "androidCxxLibName": "NitroPdfApi"
+  },
+  "autolinking": {
+    "PdfApi": {
+      "swift": "HybridPdfApi",
+      "kotlin": "HybridPdfApi"
+    },
+    "PdfView": {
+      "swift": "HybridPdfView",
+      "kotlin": "HybridPdfView"
+    }
+  },
+  "ignorePaths": [
+    "**/node_modules"
+  ]
+}

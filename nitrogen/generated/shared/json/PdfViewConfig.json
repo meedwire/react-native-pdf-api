@@ -1,0 +1,20 @@
+{
+  "uiViewClassName": "PdfView",
+  "supportsRawText": false,
+  "bubblingEventTypes": {},
+  "directEventTypes": {},
+  "validAttributes": {
+    "source": true,
+    "viewerBackgroundColor": true,
+    "initialPage": true,
+    "pageSpacing": true,
+    "maxZoom": true,
+    "maxPageResolution": true,
+    "singlePage": true,
+    "searchHighlight": true,
+    "onLoad": true,
+    "onPageChange": true,
+    "onError": true,
+    "hybridRef": true
+  }
+}
