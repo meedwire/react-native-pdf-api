@@ -1,51 +1,138 @@
 {
   "name": "@meedwire/react-native-pdf-api",
   "version": "0.1.0",
-  "description": "Native PDF rendering and search API for React Native.",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "react-native": "src/index.ts",
-  "source": "src/index.ts",
+  "description": "Native PDF rendering, search and text extraction API for React Native (iOS & Android), built on TurboModules + Fabric.",
+  "source": "./src/index.ts",
+  "main": "./lib/commonjs/index.js",
+  "module": "./lib/module/index.js",
+  "types": "./lib/typescript/commonjs/src/index.d.ts",
+  "react-native": "./src/index.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "react-native": "./src/index.ts",
+      "import": {
+        "types": "./lib/typescript/module/src/index.d.ts",
+        "default": "./lib/module/index.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/src/index.d.ts",
+        "default": "./lib/commonjs/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "src",
-    "react-native.config.js",
-    "nitrogen",
-    "android/build.gradle",
-    "android/gradle.properties",
-    "android/fix-prefab.gradle",
-    "android/CMakeLists.txt",
-    "android/src",
-    "ios/**/*.h",
-    "ios/**/*.m",
-    "ios/**/*.mm",
-    "ios/**/*.cpp",
-    "ios/**/*.swift",
-    "nitro.json",
+    "lib",
+    "android",
+    "ios",
+    "cpp",
     "*.podspec",
-    "README.md"
+    "react-native.config.js",
+    "!ios/build",
+    "!android/build",
+    "!android/gradle",
+    "!android/gradlew",
+    "!android/gradlew.bat",
+    "!android/local.properties",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "!**/.*"
   ],
   "scripts": {
+    "example": "npm run --workspace @meedwire/react-native-pdf-api-example",
     "typecheck": "tsc --noEmit",
-    "specs": "tsc --noEmit false && nitrogen --log-level debug"
+    "lint": "eslint \"**/*.{js,ts,tsx}\"",
+    "clean": "del-cli android/build example/android/build example/ios/build lib",
+    "prepare": "bob build",
+    "release": "release-it --only-version"
   },
   "keywords": [
     "react-native",
+    "ios",
+    "android",
     "pdf",
-    "nitro"
+    "pdf-viewer",
+    "pdfkit",
+    "pdfrenderer",
+    "turbomodule",
+    "fabric"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meedwire/react-native-pdf-api.git"
+  },
+  "author": "Meedwire <leonardo.jeronimo@afya.com.br> (https://github.com/meedwire)",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/meedwire/react-native-pdf-api/issues"
+  },
+  "homepage": "https://github.com/meedwire/react-native-pdf-api#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "nitrogen": "0.35.9",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@react-native/babel-preset": "0.83.6",
+    "@react-native/eslint-config": "0.83.6",
+    "@release-it/conventional-changelog": "^9.0.2",
+    "@types/jest": "^29.5.13",
+    "@types/react": "^19.2.0",
+    "commitlint": "^19.6.0",
+    "del-cli": "^6.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "jest": "^29.7.0",
+    "lefthook": "^1.8.2",
+    "prettier": "^3.3.3",
     "react": "19.2.0",
     "react-native": "0.83.6",
-    "react-native-nitro-modules": "0.35.9",
-    "typescript": "~5.9.2"
+    "react-native-builder-bob": "^0.41.0",
+    "react-test-renderer": "19.2.0",
+    "release-it": "^17.10.0",
+    "typescript": "^5.9.0"
   },
   "peerDependencies": {
-    "expo-file-system": "*",
     "react": "*",
-    "react-native": "*",
-    "react-native-nitro-modules": "*"
+    "react-native": "*"
+  },
+  "workspaces": [
+    "example"
+  ],
+  "codegenConfig": {
+    "name": "RNPdfApiSpec",
+    "type": "all",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.meedwire.pdfapi"
+    },
+    "ios": {
+      "componentProvider": {
+        "PdfView": "PdfViewComponentView"
+      }
+    }
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "commonjs",
+        {
+          "esm": true
+        }
+      ],
+      "typescript"
+    ]
   }
 }

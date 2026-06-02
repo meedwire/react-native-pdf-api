@@ -2,19 +2,17 @@ import type { StyleProp, ViewStyle } from 'react-native';
 
 import type {
   PdfCapabilities,
-  PdfErrorEvent,
   PdfMetadata,
   PdfOpenDocumentResult,
-  PdfPageChangeEvent,
   PdfPageInfo,
   PdfRenderedPage,
   PdfRenderOptions,
   PdfSearchBounds,
   PdfSearchOptions,
   PdfSearchResult,
-  PdfViewerSearchHighlight,
-} from './specs/PdfApi.nitro';
+} from './NativePdfApi';
 
+/** A PDF source: a URI string, or an object with optional auth/cache control. */
 export type TypePdfSource =
   | string
   | {
@@ -23,6 +21,23 @@ export type TypePdfSource =
       cacheKey?: string;
       fileName?: string;
     };
+
+export interface PdfPageChangeEvent {
+  currentPage: number;
+  pageCount: number;
+}
+
+export interface PdfErrorEvent {
+  code: string;
+  message: string;
+}
+
+export interface PdfViewerSearchHighlight {
+  requestId: number;
+  pageIndex?: number;
+  bounds?: PdfSearchBounds[];
+  focusBounds?: PdfSearchBounds[];
+}
 
 export type IPdfCapabilities = PdfCapabilities;
 export type IPdfMetadata = PdfMetadata;
@@ -53,16 +68,16 @@ export interface IPdfDocument {
   getPageInfoAsync(pageIndex: number): Promise<IPdfPageInfo>;
   renderPageAsync(
     pageIndex: number,
-    options?: IPdfRenderOptions,
+    options?: IPdfRenderOptions
   ): Promise<IPdfRenderedPage>;
   getThumbnailAsync(
     pageIndex: number,
-    options?: IPdfRenderOptions,
+    options?: IPdfRenderOptions
   ): Promise<IPdfRenderedPage>;
   getTextAsync(pageIndex?: number): Promise<string | null>;
   searchTextAsync(
     query: string,
-    options?: IPdfSearchOptions,
+    options?: IPdfSearchOptions
   ): Promise<IPdfSearchResult[]>;
   closeAsync(): Promise<void>;
 }
@@ -72,7 +87,7 @@ export interface IPdfViewRef {
   getTextAsync(pageIndex?: number): Promise<string | null>;
   searchTextAsync(
     query: string,
-    options?: IPdfSearchOptions,
+    options?: IPdfSearchOptions
   ): Promise<IPdfSearchResult[]>;
   clearSearchAsync(): void;
   closeDocumentAsync(): Promise<void>;

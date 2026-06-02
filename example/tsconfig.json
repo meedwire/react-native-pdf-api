@@ -1,0 +1,11 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": [],
+    "paths": {
+      "@meedwire/react-native-pdf-api": ["../src/index"]
+    }
+  },
+  "include": ["src", "index.js", "metro.config.js"]
+}

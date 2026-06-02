@@ -1,29 +1,30 @@
 {
-  "include": [
-    "src"
-  ],
   "compilerOptions": {
-    "composite": true,
-    "outDir": "lib",
-    "rootDir": "src",
+    "rootDir": ".",
+    "paths": {
+      "@meedwire/react-native-pdf-api": ["./src/index"]
+    },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react",
-    "lib": ["esnext"],
-    "module": "esnext",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
+    "noImplicitUseStrict": false,
+    "noStrictGenericChecks": false,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "esnext",
+    "target": "ESNext",
     "verbatimModuleSyntax": true
-  }
+  },
+  "include": ["src"],
+  "exclude": ["lib", "node_modules", "example", "nitrogen"]
 }

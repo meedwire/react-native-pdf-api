@@ -1,6 +1,5 @@
 import {
   type ComponentType,
-  default as React,
   forwardRef,
   useCallback,
   useEffect,
@@ -10,14 +9,13 @@ import {
   useState,
 } from 'react';
 import { StyleSheet } from 'react-native';
-import { callback } from 'react-native-nitro-modules';
 
 import {
   normalizePdfSource,
   openDocumentAsync,
   preparePdfSourceAsync,
 } from './PdfApi';
-import { NativePdfView } from './NativePdfApi';
+import NativePdfViewComponent from './PdfViewNativeComponent';
 
 import type {
   INativeOpenDocumentResult,
@@ -30,17 +28,18 @@ import type {
   IPdfViewRef,
 } from './types';
 
-const NativePdfViewComponent =
-  NativePdfView as ComponentType<Record<string, unknown>>;
+const NativePdfView = NativePdfViewComponent as unknown as ComponentType<
+  Record<string, unknown>
+>;
 
 export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
   { source, backgroundColor, onError, onLoad, onPageChange, style, ...props },
-  ref,
+  ref
 ) {
   const normalizedSource = useMemo(() => normalizePdfSource(source), [source]);
   const sourceSignature = useMemo(
     () => JSON.stringify(normalizedSource),
-    [normalizedSource],
+    [normalizedSource]
   );
   const latestSourceSignatureRef = useRef(sourceSignature);
   const documentRef = useRef<IPdfDocument | null>(null);
@@ -58,6 +57,13 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
 
   latestSourceSignatureRef.current = sourceSignature;
 
+  // Keep the latest onError in a ref so the source-preparation effect does NOT
+  // depend on it. Consumers usually pass an inline handler (new identity every
+  // render); depending on it would re-run the effect each render, toggling
+  // `preparedUri` and reloading the native document in a tight loop.
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   const closePreparedDocumentAsync = useCallback(async () => {
     const document = documentRef.current;
     documentRef.current = null;
@@ -68,7 +74,7 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
   const updateSearchHighlight = useCallback(
     (
       result?: IPdfSearchResult | null,
-      options?: { focus?: boolean; highlight?: boolean },
+      options?: { focus?: boolean; highlight?: boolean }
     ) => {
       searchHighlightRequestIdRef.current += 1;
 
@@ -82,7 +88,7 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
         focusBounds: shouldFocus ? result?.bounds : undefined,
       });
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -98,7 +104,7 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
         if (isMounted) setPreparedUri(uri);
       })
       .catch((error) => {
-        onError?.({
+        onErrorRef.current?.({
           nativeEvent: {
             code: 'ERR_PDF_SOURCE',
             message: error instanceof Error ? error.message : String(error),
@@ -109,7 +115,7 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
     return () => {
       isMounted = false;
     };
-  }, [sourceSignature, onError]);
+  }, [sourceSignature]);
 
   useEffect(() => {
     return () => {
@@ -148,24 +154,24 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
   ]);
 
   const handleLoad = useCallback(
-    (nativeEvent: INativeOpenDocumentResult) => {
-      onLoad?.({ nativeEvent });
+    (event: { nativeEvent: INativeOpenDocumentResult }) => {
+      onLoad?.(event);
     },
-    [onLoad],
+    [onLoad]
   );
 
   const handlePageChange = useCallback(
-    (nativeEvent: IPdfPageChangeEvent) => {
-      onPageChange?.({ nativeEvent });
+    (event: { nativeEvent: IPdfPageChangeEvent }) => {
+      onPageChange?.(event);
     },
-    [onPageChange],
+    [onPageChange]
   );
 
   const handleError = useCallback(
-    (nativeEvent: IPdfErrorEvent) => {
-      onError?.({ nativeEvent });
+    (event: { nativeEvent: IPdfErrorEvent }) => {
+      onError?.(event);
     },
-    [onError],
+    [onError]
   );
 
   useImperativeHandle(
@@ -195,15 +201,15 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
       },
       closeDocumentAsync: closePreparedDocumentAsync,
     }),
-    [closePreparedDocumentAsync, ensureDocumentAsync, updateSearchHighlight],
+    [closePreparedDocumentAsync, ensureDocumentAsync, updateSearchHighlight]
   );
 
   return (
-    <NativePdfViewComponent
+    <NativePdfView
       {...props}
-      onError={callback(handleError)}
-      onLoad={callback(handleLoad)}
-      onPageChange={callback(handlePageChange)}
+      onError={handleError}
+      onLoad={handleLoad}
+      onPageChange={handlePageChange}
       source={preparedUri}
       searchHighlight={searchHighlight ?? undefined}
       style={style}

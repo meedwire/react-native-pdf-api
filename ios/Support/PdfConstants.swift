@@ -9,13 +9,13 @@ internal let pdfDefaultViewBackgroundColor = UIColor(
   alpha: 1
 )
 
-internal func pdfCapabilities() -> PdfCapabilities {
-  PdfCapabilities(
-    supportsMetadata: true,
-    supportsPageText: true,
-    supportsSearch: true,
-    supportsLinks: true,
-    supportsForms: false,
-    supportsAnnotations: true
-  )
+internal func pdfCapabilities() -> [String: Any] {
+  [
+    "supportsMetadata": true,
+    "supportsPageText": true,
+    "supportsSearch": true,
+    "supportsLinks": true,
+    "supportsForms": false,
+    "supportsAnnotations": true,
+  ]
 }

@@ -1,6 +1,6 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { Platform } from 'react-native';
 
-import NativePdfApi from './NativePdfApi';
+import NativePdfApiModule, { type Spec } from './NativePdfApi';
 
 import type {
   INativeOpenDocumentResult,
@@ -11,7 +11,64 @@ import type {
   TypePdfSource,
 } from './types';
 
-const PDF_CACHE_DIRECTORY = 'react-native-pdf-api';
+const LINKING_ERROR =
+  `The package '@meedwire/react-native-pdf-api' doesn't seem to be linked. Make sure: \n\n` +
+  Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
+  '- You rebuilt the app after installing the package\n' +
+  '- You are not using Expo Go\n';
+
+const unsupportedCapabilities = {
+  supportsMetadata: false,
+  supportsPageText: false,
+  supportsSearch: false,
+  supportsLinks: false,
+  supportsForms: false,
+  supportsAnnotations: false,
+};
+
+const webModule: Spec = {
+  getCapabilities() {
+    return unsupportedCapabilities;
+  },
+  async prepareSourceAsync(uri: string) {
+    return { uri, fromCache: false };
+  },
+  async openDocumentAsync() {
+    throw new Error('PdfApi is not available on web.');
+  },
+  async closeDocumentAsync() {},
+  async closeAllDocumentsAsync() {},
+  async getMetadataAsync() {
+    throw new Error('PdfApi is not available on web.');
+  },
+  async getPageInfoAsync() {
+    throw new Error('PdfApi is not available on web.');
+  },
+  async renderPageAsync() {
+    throw new Error('PdfApi is not available on web.');
+  },
+  async getTextAsync() {
+    return null;
+  },
+  async searchTextAsync() {
+    return [];
+  },
+  async clearPdfCacheAsync() {},
+};
+
+const NativePdfApi: Spec =
+  Platform.OS === 'web'
+    ? webModule
+    : (NativePdfApiModule ??
+      new Proxy({} as Spec, {
+        get() {
+          return () => {
+            throw new Error(LINKING_ERROR);
+          };
+        },
+      }));
+
+export { NativePdfApi };
 
 export function normalizePdfSource(source: TypePdfSource) {
   return typeof source === 'string' ? { uri: source } : source;
@@ -21,36 +78,12 @@ export function isRemotePdfUri(uri: string) {
   return /^https?:\/\//i.test(uri);
 }
 
-function getCacheDirectory() {
-  const directory = new Directory(Paths.cache, PDF_CACHE_DIRECTORY);
-  directory.create({ idempotent: true, intermediates: true });
-  return directory;
-}
-
-function getSafeFileName(source: ReturnType<typeof normalizePdfSource>) {
-  const explicitName = source.fileName ?? source.cacheKey;
-
-  if (explicitName) {
-    return explicitName.replace(/[^a-zA-Z0-9._-]/g, '_');
-  }
-
-  const fileName = source.uri.split('/').pop()?.split('?')[0] ?? 'document.pdf';
-  const decodedFileName = (() => {
-    try {
-      return decodeURIComponent(fileName);
-    } catch {
-      return fileName;
-    }
-  })();
-  const normalized = decodedFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-
-  return normalized.toLowerCase().endsWith('.pdf')
-    ? normalized
-    : `${normalized}.pdf`;
-}
-
+/**
+ * Resolves a PDF source to a local file URI. Remote (`http`/`https`) sources
+ * are downloaded into the native cache; local sources are returned as-is.
+ */
 export async function preparePdfSourceAsync(
-  source: TypePdfSource,
+  source: TypePdfSource
 ): Promise<IPreparedPdfSource> {
   const normalizedSource = normalizePdfSource(source);
 
@@ -58,18 +91,11 @@ export async function preparePdfSourceAsync(
     return { uri: normalizedSource.uri, fromCache: false };
   }
 
-  const cacheDirectory = getCacheDirectory();
-  const file = new File(cacheDirectory, getSafeFileName(normalizedSource));
-  const fromCache = file.exists;
-
-  if (!fromCache) {
-    await File.downloadFileAsync(normalizedSource.uri, file, {
-      headers: normalizedSource.headers,
-      idempotent: true,
-    });
-  }
-
-  return { uri: file.uri, fromCache };
+  return NativePdfApi.prepareSourceAsync(
+    normalizedSource.uri,
+    JSON.stringify(normalizedSource.headers ?? {}),
+    normalizedSource.fileName ?? normalizedSource.cacheKey ?? ''
+  );
 }
 
 class PdfDocument implements IPdfDocument {
@@ -95,7 +121,11 @@ class PdfDocument implements IPdfDocument {
   }
 
   async renderPageAsync(pageIndex: number, options?: IPdfRenderOptions) {
-    return NativePdfApi.renderPageAsync(this.documentId, pageIndex, options);
+    return NativePdfApi.renderPageAsync(
+      this.documentId,
+      pageIndex,
+      JSON.stringify(options ?? {})
+    );
   }
 
   async getThumbnailAsync(pageIndex: number, options?: IPdfRenderOptions) {
@@ -107,11 +137,15 @@ class PdfDocument implements IPdfDocument {
   }
 
   async getTextAsync(pageIndex?: number) {
-    return NativePdfApi.getTextAsync(this.documentId, pageIndex);
+    return NativePdfApi.getTextAsync(this.documentId, pageIndex ?? -1);
   }
 
   async searchTextAsync(query: string, options?: IPdfSearchOptions) {
-    return NativePdfApi.searchTextAsync(this.documentId, query, options);
+    return NativePdfApi.searchTextAsync(
+      this.documentId,
+      query,
+      JSON.stringify(options ?? {})
+    );
   }
 
   async closeAsync() {
@@ -123,7 +157,7 @@ class PdfDocument implements IPdfDocument {
 }
 
 export async function openDocumentAsync(
-  source: TypePdfSource,
+  source: TypePdfSource
 ): Promise<IPdfDocument> {
   const preparedSource = await preparePdfSourceAsync(source);
   const result = await NativePdfApi.openDocumentAsync(preparedSource.uri);

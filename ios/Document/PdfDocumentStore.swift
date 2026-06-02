@@ -3,7 +3,7 @@ import Foundation
 internal final class PdfDocumentStore {
   private var documents: [String: PdfDocumentHolder] = [:]
 
-  func openDocument(_ uri: String) throws -> PdfOpenDocumentResult {
+  func openDocument(_ uri: String) throws -> [String: Any] {
     let document = try loadPdfDocument(uri)
     let documentId = UUID().uuidString
     documents[documentId] = PdfDocumentHolder(
@@ -12,12 +12,12 @@ internal final class PdfDocumentStore {
       document: document
     )
 
-    return PdfOpenDocumentResult(
-      documentId: documentId,
-      pageCount: Double(document.pageCount),
-      sourceUri: uri,
-      capabilities: pdfCapabilities()
-    )
+    return [
+      "documentId": documentId,
+      "pageCount": document.pageCount,
+      "sourceUri": uri,
+      "capabilities": pdfCapabilities(),
+    ]
   }
 
   func holder(for documentId: String) throws -> PdfDocumentHolder {
