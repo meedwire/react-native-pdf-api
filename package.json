@@ -1,6 +1,6 @@
 {
   "name": "@meedwire/react-native-pdf-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Native PDF rendering, search and text extraction API for React Native (iOS & Android), built on TurboModules + Fabric.",
   "source": "./src/index.ts",
   "main": "./lib/commonjs/index.js",
