@@ -15,6 +15,16 @@ Pod::Spec.new do |s|
 
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
 
+  # Keep the Obj-C++ headers out of the public module umbrella. RNPdfApi.h pulls in
+  # <RNPdfApiSpec/...> (the RN Codegen spec) and PdfViewComponentView.h pulls in
+  # React-Fabric — both are C++. If they stay public, emitting this pod's Swift
+  # module forces Clang to build the aggregate `ReactCodegen` module as plain
+  # Objective-C and it fails ("'utility' file not found" / "must be compiled as
+  # Obj-C++"). The Swift sources here are React-free and the app resolves these
+  # classes by runtime name (TurboModule registry / RCTThirdPartyComponentsProvider),
+  # so nothing imports them publicly; the .mm files still see them via Headers/Private.
+  s.private_header_files = "ios/**/*.h"
+
   s.frameworks = "PDFKit"
 
   install_modules_dependencies(s)
