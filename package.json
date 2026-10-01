@@ -65,7 +65,7 @@
     "type": "git",
     "url": "git+https://github.com/meedwire/react-native-pdf-api.git"
   },
-  "author": "Meedwire <leonardo.jeronimo@afya.com.br> (https://github.com/meedwire)",
+  "author": "Meedwire <meedwire@gmail.com> (https://github.com/meedwire)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/meedwire/react-native-pdf-api/issues"
