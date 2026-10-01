@@ -205,8 +205,10 @@ class PdfContainerView(
     }
 
     Thread {
+      var openedDocument: PdfDocumentHolder? = null
       try {
         val document = openPdfDocument(reactContext, currentSource)
+        openedDocument = document
         val pageCount = document.renderer.pageCount
         val normalizedInitialPage = initialPageIndex.coerceIn(0, pageCount - 1)
         val pageIndexes = if (singlePageMode) {
@@ -284,6 +286,9 @@ class PdfContainerView(
           emitPageChange(normalizedInitialPage, pageCount)
         }
       } catch (error: Throwable) {
+        // Opened before failing (e.g. reading page sizes): release its
+        // descriptor, renderer and content:// copy.
+        openedDocument?.close()
         post {
           if (generation != loadGeneration) return@post
           isLoading = false

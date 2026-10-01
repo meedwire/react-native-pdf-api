@@ -76,7 +76,7 @@ internal enum PdfPageRenderer {
     }
 
     let fileExtension = format == "jpeg" ? "jpg" : "png"
-    let outputUrl = try pdfCacheDirectory()
+    let outputUrl = try pdfRendersDirectory()
       .appendingPathComponent("\(holder.id)-\(pageIndex)-\(UUID().uuidString).\(fileExtension)")
 
     let data: Data?

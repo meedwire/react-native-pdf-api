@@ -16,16 +16,22 @@ public typealias PdfReject = (String, String, Error?) -> Void
     pdfCapabilities()
   }
 
-  @objc(prepareSource:headersJson:fileName:resolve:reject:)
+  @objc(prepareSource:headersJson:fileName:cacheKey:resolve:reject:)
   public func prepareSource(
     _ uri: String,
     headersJson: String,
     fileName: String,
+    cacheKey: String,
     resolve: @escaping PdfResolve,
     reject: @escaping PdfReject
   ) {
     run(resolve, reject) {
-      try preparePdfSource(uri, headersJson: headersJson, fileName: fileName)
+      try preparePdfSource(
+        uri,
+        headersJson: headersJson,
+        fileName: fileName,
+        cacheKey: cacheKey
+      )
     }
   }
 

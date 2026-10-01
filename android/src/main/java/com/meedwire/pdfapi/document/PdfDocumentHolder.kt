@@ -10,7 +10,9 @@ internal data class PdfDocumentHolder(
   val sourceUri: String,
   val file: File,
   val descriptor: ParcelFileDescriptor,
-  val renderer: PdfRenderer
+  val renderer: PdfRenderer,
+  /** [file] is a private copy of a content:// source, deleted with the document. */
+  val deleteFileOnClose: Boolean = false
 ) {
   private val lock = Any()
 
@@ -25,5 +27,8 @@ internal data class PdfDocumentHolder(
   fun close() {
     runCatching { renderer.close() }
     runCatching { descriptor.close() }
+    if (deleteFileOnClose) {
+      runCatching { file.delete() }
+    }
   }
 }

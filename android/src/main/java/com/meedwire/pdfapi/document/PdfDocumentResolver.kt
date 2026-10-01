@@ -8,57 +8,97 @@ import com.meedwire.pdfapi.support.PdfException
 import java.io.File
 import java.util.UUID
 
-internal fun pdfCacheDirectory(context: Context): File {
-  return File(context.cacheDir, "react-native-pdf-api").also { directory ->
-    directory.mkdirs()
-  }
-}
+/** A local PDF file; [isTemporary] marks a private copy owned by the document. */
+private class ResolvedPdfFile(val file: File, val isTemporary: Boolean)
 
-private fun resolvePdfFile(context: Context, uriString: String): File {
+private fun resolvePdfFile(context: Context, uriString: String): ResolvedPdfFile {
   val uri = Uri.parse(uriString)
 
   if (uri.scheme == "content") {
-    val outputFile = File(
-      pdfCacheDirectory(context),
-      "source-${UUID.randomUUID()}.pdf"
-    )
-
-    context.contentResolver.openInputStream(uri)?.use { input ->
-      outputFile.outputStream().use { output ->
-        input.copyTo(output)
-      }
-    } ?: throw PdfException("ERR_PDF_SOURCE", "Unable to read content uri.")
-
-    return outputFile
+    return ResolvedPdfFile(copyContentUri(context, uri), isTemporary = true)
   }
 
   if (uri.scheme == "file") {
-    return File(uri.path ?: throw PdfException("ERR_PDF_SOURCE", "Invalid file uri."))
+    val path = uri.path ?: throw PdfException("ERR_PDF_SOURCE", "Invalid file uri.")
+    return ResolvedPdfFile(File(path), isTemporary = false)
   }
 
   if (uri.scheme == null) {
-    return File(uriString)
+    return ResolvedPdfFile(File(uriString), isTemporary = false)
   }
 
   throw PdfException("ERR_PDF_SOURCE", "Unsupported PDF uri scheme: ${uri.scheme}.")
 }
 
+/**
+ * PdfRenderer needs a seekable file, so a content:// source is copied into
+ * `tmp/`. The copy belongs to the opened document and is deleted when it
+ * closes; the cache sweep removes copies orphaned by a crash.
+ */
+private fun copyContentUri(context: Context, uri: Uri): File {
+  PdfCacheRegistry.shared.sweepOnce(pdfCacheDirectory(context))
+
+  val outputFile = File(
+    pdfCacheSubdirectory(context, PdfCacheConfig.TEMP_DIRECTORY_NAME),
+    "source-${UUID.randomUUID()}.pdf"
+  )
+
+  try {
+    val input = context.contentResolver.openInputStream(uri)
+      ?: throw PdfException("ERR_PDF_SOURCE", "Unable to read content uri.")
+
+    input.use { source ->
+      outputFile.outputStream().use { output -> source.copyTo(output) }
+    }
+
+    return outputFile
+  } catch (error: Throwable) {
+    outputFile.delete()
+
+    throw when (error) {
+      is PdfException -> error
+      is SecurityException ->
+        PdfException("ERR_PDF_SOURCE", "Permission denied reading content uri.", error)
+      else -> PdfException("ERR_PDF_SOURCE", "Unable to read content uri.", error)
+    }
+  }
+}
+
 internal fun openPdfDocument(context: Context, uri: String): PdfDocumentHolder {
-  val file = resolvePdfFile(context, uri)
+  val source = resolvePdfFile(context, uri)
+  val file = source.file
 
   if (!file.exists()) {
     throw PdfException("ERR_PDF_SOURCE", "PDF file does not exist.")
   }
 
+  var descriptor: ParcelFileDescriptor? = null
   try {
-    val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-    val renderer = PdfRenderer(descriptor)
+    val openedDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+    descriptor = openedDescriptor
+    val renderer = PdfRenderer(openedDescriptor)
     val documentId = UUID.randomUUID().toString()
 
-    return PdfDocumentHolder(documentId, uri, file, descriptor, renderer)
-  } catch (error: SecurityException) {
-    throw PdfException("ERR_PDF_LOCKED", "Protected PDFs are not supported.", error)
+    return PdfDocumentHolder(
+      documentId,
+      uri,
+      file,
+      openedDescriptor,
+      renderer,
+      deleteFileOnClose = source.isTemporary
+    )
   } catch (error: Throwable) {
+    // The renderer only owns the descriptor once constructed: a locked or
+    // corrupt file would otherwise leak it (and its content:// copy).
+    runCatching { descriptor?.close() }
+    if (source.isTemporary) {
+      file.delete()
+    }
+
+    if (error is SecurityException) {
+      throw PdfException("ERR_PDF_LOCKED", "Protected PDFs are not supported.", error)
+    }
+
     throw PdfException("ERR_PDF_OPEN", "Unable to open PDF document.", error)
   }
 }

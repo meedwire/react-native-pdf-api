@@ -107,13 +107,14 @@ describe('preparePdfSourceAsync', () => {
     const result = await preparePdfSourceAsync({
       uri: 'https://x.com/a.pdf',
       headers: { Authorization: 'Bearer t' },
-      cacheKey: 'my-key.pdf',
+      cacheKey: 'my-key',
     });
 
     expect(native.prepareSourceAsync).toHaveBeenCalledWith(
       'https://x.com/a.pdf',
       JSON.stringify({ Authorization: 'Bearer t' }),
-      'my-key.pdf'
+      '',
+      'my-key'
     );
     expect(result).toEqual({
       uri: 'file:///cache/remote.pdf',
@@ -121,12 +122,56 @@ describe('preparePdfSourceAsync', () => {
     });
   });
 
-  it('passes an empty headers object and empty filename when omitted', async () => {
+  it('passes an empty headers object, file name and cache key when omitted', async () => {
     await preparePdfSourceAsync('https://x.com/a.pdf');
     expect(native.prepareSourceAsync).toHaveBeenCalledWith(
       'https://x.com/a.pdf',
       '{}',
+      '',
       ''
+    );
+  });
+
+  it('forwards fileName and cacheKey as separate arguments', async () => {
+    await preparePdfSourceAsync({
+      uri: 'https://x.com/p1/doc.pdf?sig=1',
+      fileName: 'laudo.pdf',
+      cacheKey: 'exam-42',
+    });
+
+    expect(native.prepareSourceAsync).toHaveBeenCalledWith(
+      'https://x.com/p1/doc.pdf?sig=1',
+      '{}',
+      'laudo.pdf',
+      'exam-42'
+    );
+  });
+
+  it('never turns fileName into the cache identity', async () => {
+    await preparePdfSourceAsync({
+      uri: 'https://x.com/p1/doc.pdf?sig=1',
+      fileName: 'laudo.pdf',
+    });
+
+    expect(native.prepareSourceAsync).toHaveBeenCalledWith(
+      'https://x.com/p1/doc.pdf?sig=1',
+      '{}',
+      'laudo.pdf',
+      ''
+    );
+  });
+
+  it('forwards cacheKey alone with an empty fileName', async () => {
+    await preparePdfSourceAsync({
+      uri: 'https://x.com/p1/doc.pdf?sig=1',
+      cacheKey: 'exam-42',
+    });
+
+    expect(native.prepareSourceAsync).toHaveBeenCalledWith(
+      'https://x.com/p1/doc.pdf?sig=1',
+      '{}',
+      '',
+      'exam-42'
     );
   });
 });

@@ -109,6 +109,22 @@ type TypePdfSource =
 `headers` are sent with that request. Local `file://`, absolute paths and (on
 Android) `content://` URIs are passed straight through.
 
+- `cacheKey` — opaque, stable identity of the document in the cache. Without
+  it, the identity is the **full URI, query string included**. Use it for URLs
+  that change on every fetch (e.g. pre‑signed S3 URLs), and change it when the
+  document changes (e.g. `report-42-v3`).
+- `fileName` — only names the cached file (e.g. what a share sheet shows). It
+  never decides which document is served. See [Cache](#cache).
+
+```ts
+// A pre-signed URL whose query changes on every fetch, shared as "laudo.pdf".
+const { uri } = await preparePdfSourceAsync({
+  uri: presignedUrl,
+  cacheKey: `exam-${exam.id}-v${exam.version}`,
+  fileName: 'laudo.pdf',
+});
+```
+
 ## Imperative API
 
 ```ts
@@ -117,7 +133,7 @@ import { openDocumentAsync, clearPdfCacheAsync } from '@meedwire/react-native-pd
 const document = await openDocumentAsync({
   uri: 'https://example.com/document.pdf',
   headers: { Authorization: `Bearer ${token}` },
-  cacheKey: 'document-v1.pdf',
+  cacheKey: 'document-v1',
 });
 
 try {
@@ -156,6 +172,10 @@ await clearPdfCacheAsync();
 > callbacks in refs, so passing new identities each render does not reload the
 > document. `onPageChange` fires when the current page changes during scroll.
 
+> `onError` only reports errors for the **current** `source`: a download or
+> preparation that fails after the component unmounted, or after `source`
+> changed, is never reported.
+
 ### `PdfView` ref (`IPdfViewRef`)
 
 - `openDocumentAsync()` → `IPdfDocument`
@@ -190,6 +210,74 @@ type IPdfRenderOptions = {
 `ERR_PDF_SOURCE`, `ERR_PDF_OPEN`, `ERR_PDF_LOCKED`, `ERR_PDF_PAGE_OUT_OF_BOUNDS`,
 `ERR_PDF_PAGE`, `ERR_PDF_DOCUMENT_NOT_FOUND`, `ERR_PDF_RENDER_TOO_LARGE`,
 `ERR_PDF_RENDER`, `ERR_PDF_TEXT_UNSUPPORTED`, `ERR_PDF_SEARCH_UNSUPPORTED`.
+
+## Cache
+
+Remote (`http`/`https`) sources are downloaded once into the app's cache
+directory and reused afterwards. `preparePdfSourceAsync()` returns the local
+file (`{ uri, fromCache }`), which is also what you pass to a share sheet.
+
+**Identity.** A cached document is identified by `cacheKey` when it is set,
+otherwise by the full `uri` (query string included). `fileName` is never part
+of the identity: two different documents with the same file name never
+overwrite or replace each other.
+
+**On‑disk layout** (iOS `Caches/`, Android `Context.cacheDir`):
+
+```
+react-native-pdf-api/
+  <sha256(identity)>/<file name>.pdf   one directory per document
+  renders/                             renderPageAsync / getThumbnailAsync output
+  tmp/                                 Android: private copies of content:// sources
+```
+
+The file name is `fileName`, or the URI's last path segment (percent‑decoded,
+query ignored), restricted to `[A-Za-z0-9._-]` (other characters become `_`),
+at most 100 characters before the extension, `document` when nothing usable is
+left, and always ending in `.pdf`. Asking for the same document under another
+`fileName` reuses the download (hard link, or a copy where links are not
+allowed).
+
+**Integrity.** A download is kept only if the response is HTTP 2xx, the body is
+not empty, `%PDF-` appears within its first 1024 bytes (an HTML error or login
+page served with `200` is rejected) and, on Android, the body matches
+`Content-Length`. A download fails if connecting or receiving data stalls for
+30 s (an idle timeout, not a limit on the whole transfer). Files are written
+atomically, so a failed or interrupted download never leaves a partial
+document in the cache. All these failures reject with `ERR_PDF_SOURCE`.
+
+**Sweep.** Once per app process, the first remote source prepared (by
+`preparePdfSourceAsync()`, `openDocumentAsync()` or `PdfView`; on Android also
+the first `content://` source opened) starts a background cleanup that never
+delays or fails that call:
+
+- files left by 0.1.x directly under `react-native-pdf-api/` are deleted;
+- temporary leftovers (interrupted downloads, orphaned `content://` copies)
+  older than 1 hour are deleted;
+- documents not used for 7 days, and rendered pages older than 7 days, are
+  deleted;
+- if the documents still take more than 200 MB, the least recently used ones
+  are deleted until they fit.
+
+Documents used by the running process are never swept. `clearPdfCacheAsync()`
+deletes the whole cache directory immediately.
+
+## Migrating from 0.1.x
+
+- **`cacheKey` is now an opaque identity**, no longer a file name. Drop any
+  `.pdf` suffix you added (`'document-v1.pdf'` → `'document-v1'`) and pass
+  `fileName` if you need a specific name for the cached file.
+- Without `cacheKey`, the identity is the full URI including its query, so a
+  URL whose query changes on every request is downloaded again each time — set
+  a `cacheKey` for those.
+- Cached files from 0.1.x (stored flat under `react-native-pdf-api/`) are
+  deleted the first time the new version prepares a source; they are
+  downloaded again on demand.
+- Non‑PDF responses (HTML error pages, non‑2xx statuses, truncated bodies) now
+  reject with `ERR_PDF_SOURCE` instead of being cached.
+- The native module spec changed (`prepareSourceAsync` takes a `cacheKey`
+  argument): rebuild the native app — `pod install` on iOS and a fresh Gradle
+  build on Android. Mixing the new JS with an old native binary does not work.
 
 ## Screenshots
 

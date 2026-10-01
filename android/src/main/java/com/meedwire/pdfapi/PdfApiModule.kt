@@ -28,11 +28,12 @@ class PdfApiModule(reactContext: ReactApplicationContext) :
     uri: String,
     headersJson: String,
     fileName: String,
+    cacheKey: String,
     promise: Promise
   ) {
     runAsync(promise) {
       Arguments.makeNativeMap(
-        preparePdfSource(reactApplicationContext, uri, headersJson, fileName)
+        preparePdfSource(reactApplicationContext, uri, headersJson, fileName, cacheKey)
       )
     }
   }

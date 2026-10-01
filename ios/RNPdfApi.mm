@@ -21,10 +21,16 @@
 - (void)prepareSourceAsync:(NSString *)uri
                headersJson:(NSString *)headersJson
                   fileName:(NSString *)fileName
+                  cacheKey:(NSString *)cacheKey
                    resolve:(RCTPromiseResolveBlock)resolve
                     reject:(RCTPromiseRejectBlock)reject
 {
-  [_impl prepareSource:uri headersJson:headersJson fileName:fileName resolve:resolve reject:reject];
+  [_impl prepareSource:uri
+           headersJson:headersJson
+              fileName:fileName
+              cacheKey:cacheKey
+               resolve:resolve
+                reject:reject];
 }
 
 - (void)openDocumentAsync:(NSString *)uri

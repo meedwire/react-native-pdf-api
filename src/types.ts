@@ -16,9 +16,28 @@ import type {
 export type TypePdfSource =
   | string
   | {
+      /**
+       * Remote (`http`/`https`) or local (`file://`, absolute path, Android
+       * `content://`) URI.
+       */
       uri: string;
+      /** Headers sent with the download of a remote `uri`. */
       headers?: Record<string, string>;
+      /**
+       * Opaque, stable identity of a remote document in the native cache.
+       * Without it the identity is the full `uri`, query string included, so a
+       * URL that changes on every fetch (e.g. a pre-signed S3 URL) is
+       * downloaded again each time. Pass a key that stays the same for the
+       * same document and changes when the document does (e.g.
+       * `report-42-v3`). It is never used as a file name.
+       */
       cacheKey?: string;
+      /**
+       * Name of the cached file, e.g. what a share sheet shows. It is
+       * sanitized (`[A-Za-z0-9._-]`) and always ends in `.pdf`; it defaults to
+       * the URI's last path segment. It never affects which document is
+       * served from the cache.
+       */
       fileName?: string;
     };
 

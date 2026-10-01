@@ -141,9 +141,7 @@ import UIKit
 
   private func setSourceInternal(_ source: String?) {
     guard let source else {
-      pdfView.document = nil
-      pdfView.clearSelection()
-      removeSearchHighlightAnnotations()
+      clearDocument()
       return
     }
 
@@ -168,11 +166,20 @@ import UIKit
       ] as NSDictionary)
       handlePageChange()
     } catch {
+      // A failed in-place source change must not keep showing the previous
+      // document as if it were the new one.
+      clearDocument()
       onErrorHandler?([
         "code": (error as? PdfApiError)?.code ?? "ERR_PDF_OPEN",
         "message": error.localizedDescription,
       ] as NSDictionary)
     }
+  }
+
+  private func clearDocument() {
+    pdfView.document = nil
+    pdfView.clearSelection()
+    removeSearchHighlightAnnotations()
   }
 
   @objc private func handlePageChange() {

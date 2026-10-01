@@ -92,6 +92,9 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
   );
 
   useEffect(() => {
+    // False once this source is no longer current: the component unmounted or
+    // `source` changed. A late result for it must neither replace the current
+    // document nor surface as an error for the source being shown.
     let isMounted = true;
     const nextSource = JSON.parse(sourceSignature) as ReturnType<
       typeof normalizePdfSource
@@ -104,6 +107,8 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
         if (isMounted) setPreparedUri(uri);
       })
       .catch((error) => {
+        if (!isMounted) return;
+
         onErrorRef.current?.({
           nativeEvent: {
             code: 'ERR_PDF_SOURCE',
@@ -119,7 +124,8 @@ export const PdfView = forwardRef<IPdfViewRef, IPdfViewProps>(function PdfView(
 
   useEffect(() => {
     return () => {
-      void closePreparedDocumentAsync();
+      // Best effort: nothing is waiting on this close.
+      closePreparedDocumentAsync().catch(() => {});
     };
   }, [sourceSignature, closePreparedDocumentAsync]);
 

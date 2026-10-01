@@ -98,13 +98,17 @@ export interface Spec extends TurboModule {
    * @param headersJson JSON-encoded `Record<string, string>` of request
    *   headers (empty object when none). Passing headers as a JSON string keeps
    *   the codegen spec free of dynamic map types.
-   * @param fileName Optional safe file name override (empty string to derive
-   *   one from the URI/cacheKey).
+   * @param fileName Name of the cached file (sanitized natively, always ending
+   *   in `.pdf`). Empty string derives it from the URI's last path segment. It
+   *   only names the file; it is never part of the cache identity.
+   * @param cacheKey Opaque, stable cache identity. Empty string makes the full
+   *   URI (query string included) the identity.
    */
   prepareSourceAsync(
     uri: string,
     headersJson: string,
-    fileName: string
+    fileName: string,
+    cacheKey: string
   ): Promise<PdfPreparedSource>;
   openDocumentAsync(uri: string): Promise<PdfOpenDocumentResult>;
   closeDocumentAsync(documentId: string): Promise<void>;

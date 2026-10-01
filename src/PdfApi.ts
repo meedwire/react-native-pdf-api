@@ -81,6 +81,9 @@ export function isRemotePdfUri(uri: string) {
 /**
  * Resolves a PDF source to a local file URI. Remote (`http`/`https`) sources
  * are downloaded into the native cache; local sources are returned as-is.
+ *
+ * The cached copy is identified by `cacheKey` (or, without one, by the full
+ * URI) and named after `fileName` (or the URI's last path segment).
  */
 export async function preparePdfSourceAsync(
   source: TypePdfSource
@@ -94,7 +97,8 @@ export async function preparePdfSourceAsync(
   return NativePdfApi.prepareSourceAsync(
     normalizedSource.uri,
     JSON.stringify(normalizedSource.headers ?? {}),
-    normalizedSource.fileName ?? normalizedSource.cacheKey ?? ''
+    normalizedSource.fileName ?? '',
+    normalizedSource.cacheKey ?? ''
   );
 }
 

@@ -59,7 +59,7 @@ internal fun renderPageToFile(
 
     val extension = if (format == "jpeg") "jpg" else "png"
     val outputFile = File(
-      pdfCacheDirectory(context),
+      pdfCacheSubdirectory(context, PdfCacheConfig.RENDERS_DIRECTORY_NAME),
       "${holder.id}-$pageIndex-${UUID.randomUUID()}.$extension"
     )
     val compressFormat = if (format == "jpeg") {

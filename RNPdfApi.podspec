@@ -25,7 +25,7 @@ Pod::Spec.new do |s|
   # so nothing imports them publicly; the .mm files still see them via Headers/Private.
   s.private_header_files = "ios/**/*.h"
 
-  s.frameworks = "PDFKit"
+  s.frameworks = "PDFKit", "CryptoKit"
 
   install_modules_dependencies(s)
 end
